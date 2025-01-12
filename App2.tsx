@@ -1,4 +1,4 @@
-import React, {useRef, useState, useCallback} from 'react';
+import React, {useRef, useEffect, useState} from 'react';
 import {
   Animated,
   Text,
@@ -6,8 +6,6 @@ import {
   ImageBackground,
   View,
   Dimensions,
-  Easing,
-  TouchableOpacity,
 } from 'react-native';
 import {BlurView} from '@react-native-community/blur';
 
@@ -15,48 +13,38 @@ const App: React.FC = () => {
   const screenHeight = Dimensions.get('window').height; // Screen height
   const [blurViewHeight, setBlurViewHeight] = useState(0); // State to store BlurView height
   const animatedValue = useRef(new Animated.Value(0)).current; // Animated value
+  const running = useRef(false); // Ref to ensure animation runs only once
 
-  // Material UI Easings
-  const materialEaseOut = Easing.bezier(0.0, 0, 0.2, 1); // Ease out (entering)
-  const materialEaseIn = Easing.bezier(0.4, 0, 1, 1); // Ease in (leaving)
+  const startAnimation = () => {
+    if (blurViewHeight > 0 && !running.current) {
+      running.current = true; // Mark animation as running
 
-  // Function to start the animation sequence
-  const startAnimation = useCallback(() => {
-    if (blurViewHeight > 0) {
-      // Calculate the start and end positions dynamically
-      const startValue = 0; // End in the middle of the screen
-      const endValue = -(screenHeight + blurViewHeight) / 2; // Start from outside the top of the screen
+      const startValue = -(screenHeight + blurViewHeight) / 2; // Start from outside the top of the screen
+      const endValue = 0; // End in the middle of the screen
 
       animatedValue.setValue(startValue); // Start animation from the calculated position
 
       Animated.sequence([
         Animated.timing(animatedValue, {
           toValue: endValue, // Move to the center
-          duration: 1000, // Duration for the first movement
-          easing: materialEaseOut, // Entering animation
-          useNativeDriver: true,
-        }),
-        Animated.timing(animatedValue, {
-          toValue: endValue, // Hold at the center
-          duration: 2000, // Pause for 4 seconds
-          easing: Easing.linear, // Hold without easing
+          duration: 4000, // Duration for the first movement
           useNativeDriver: true,
         }),
         Animated.timing(animatedValue, {
           toValue: startValue, // Move back outside the screen
-          duration: 1000, // Duration for the second movement
-          easing: materialEaseIn, // Leaving animation
+          duration: 4000, // Duration for the second movement
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        running.current = false; // Reset the flag
+        startAnimation(); // Restart the animation
+      });
     }
-  }, [
-    animatedValue,
-    blurViewHeight,
-    screenHeight,
-    materialEaseOut,
-    materialEaseIn,
-  ]);
+  };
+
+  useEffect(() => {
+    startAnimation(); // Start the animation when the component mounts
+  }, [blurViewHeight, screenHeight]);
 
   return (
     <View style={styles.container}>
@@ -64,13 +52,11 @@ const App: React.FC = () => {
       <View style={styles.contentContainer}>
         <ImageBackground
           source={{
-            uri: 'https://images.pexels.com/photos/905847/pexels-photo-905847.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            uri: 'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzNjUyOXwwfDF8c2VhcmNofDJ8fGZsb3dlcnxlbnwwfHx8fDE2ODgwMzA3NTg&ixlib=rb-4.0.3&q=80&w=1080',
           }}
           style={styles.background}>
           {/* Static Text */}
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>Glassmorphism Effect</Text>
-          </View>
+          <Text style={styles.title}>Glassmorphism Effect</Text>
         </ImageBackground>
       </View>
 
@@ -93,11 +79,6 @@ const App: React.FC = () => {
             }}
           />
           <Text style={styles.blurText}>Glassmorphism Effect</Text>
-
-          {/* Button to Start the Animation */}
-          <TouchableOpacity style={styles.button} onPress={startAnimation}>
-            <Text style={styles.buttonText}>Start Animation</Text>
-          </TouchableOpacity>
         </Animated.View>
       </View>
     </View>
@@ -117,18 +98,11 @@ const styles = StyleSheet.create({
     flex: 1,
     resizeMode: 'cover',
   },
-  titleContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 15,
-    display: 'none',
-    marginTop: 100,
-    marginHorizontal: 20,
-    padding: 20,
-  },
   title: {
-    color: '#242424',
-    fontSize: 42,
+    color: 'white',
+    fontSize: 50,
     textAlign: 'center',
+    marginTop: 50,
   },
   blurContainer: {
     flex: 1, // Allow it to share space with the contentContainer
@@ -142,7 +116,7 @@ const styles = StyleSheet.create({
   },
   animatedBlurView: {
     width: 300,
-    height: 250, // Increased height for button
+    height: 200,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -155,21 +129,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: 'black',
-    textAlign: 'center',
-    marginBottom: 20, // Add spacing between the text and the button
-  },
-  button: {
-    backgroundColor: '#242424',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    alignSelf: 'center',
-    marginTop: 20,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
     textAlign: 'center',
   },
 });
